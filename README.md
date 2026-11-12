@@ -7,4 +7,4 @@ Programa de microdrenagem urbana (chuva IDF, bacias, sarjetas e bocas de lobo, r
 - `.claude/skills/drenagem/testes/` — testes automáticos (Playwright).
 - `CLAUDE.md` — histórico e regras.
 
-Publicado em https://totalcivil.com.br/drenagem2/ (com login).
+Repositório: https://github.com/igororcobras-hash/drenagem-pluvial-2 · Publicado em https://totalcivil.com.br/drenagem2/ (com login), pela cópia em `totalcivil-site/drenagem2/index.html`.

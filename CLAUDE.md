@@ -3,6 +3,7 @@
 Responda sempre em português do Brasil. O dono (Igor) é engenheiro civil, não programador: explique o que mudou e o que ele precisa fazer, com links e nomes de arquivo exatos.
 
 ## O que é este repositório
+- Repositório: **`igororcobras-hash/drenagem-pluvial-2`** (o primeiro, `drenagem.pluvial`, ficou só como cópia antiga).
 - Código-fonte do programa **Drenagem Pluvial 2** (`index.html`, arquivo único, sem build). Nasceu em 12/11/2026 como cópia reorganizada do programa Drenagem Pluvial (`totalcivil-site/drenagem/`), que continua no ar SEM mudanças. **Não misturar os dois programas.**
 - Publicação: o arquivo `index.html` daqui é copiado para `totalcivil-site/drenagem2/index.html` (repositório `igororcobras-hash/totalcivil-site`), onde a rotina “Publicar site protegido” o envia ao Firestore e o serve só com login (campo de liberação `drenagem2Ativo`). Ver “Publicar” abaixo.
 - Antes de mexer leia **`.claude/skills/drenagem/SKILL.md`** e **`.claude/skills/drenagem/CALCULOS.md`** (fórmulas, critérios, funções, decisões do dono, normas, melhorias).
