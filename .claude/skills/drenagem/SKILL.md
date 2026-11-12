@@ -10,7 +10,7 @@ Dono: Igor, engenheiro civil (não programador). Responda em português do Brasi
 ## Antes de mexer
 1. Leia `CLAUDE.md` deste repositório (notas PATCH DR-xx: histórico e decisões do dono) e **`CALCULOS.md` desta pasta** (fórmulas, critérios, funções, decisões).
 2. Parta da versão do GitHub (`git fetch origin main`); nunca perca função que funciona.
-3. Mudança nova = bloco `<script>` PATCH próprio antes de `</body>` em `drenagem/index.html`, que substitui funções pelo nome global (`f = function(){...}` embrulhando a antiga). Ajuste dentro de bloco antigo só para corrigir defeito, com comentário `// DR-xx:`.
+3. Mudança nova = bloco `<script>` PATCH próprio antes do bloco GUIA-IA (fim do `index.html`), que substitui funções pelo nome global (`f = function(){...}` embrulhando a antiga). Ajuste dentro de bloco antigo só para corrigir defeito, com comentário `// DR-xx:`.
 4. Registre a nota `- PATCH DR-xx (data, onde): ...` no `CLAUDE.md`, com o que foi testado e o que NÃO foi.
 
 ## Armadilhas do código
@@ -38,5 +38,10 @@ NODE_PATH=$(npm root -g) node .claude/skills/drenagem/testes/exemplo.js plano 1 
 - Combinações mínimas: plano e declive; EMOP, SINAPI e SCO; 3 opções; 🛠 Redimensionar com `RAIN_FATOR` 1,6; botões da aba 13.
 - Diga sempre o que NÃO foi testado (3D, projeto real do dono).
 
+## Guia e skill dentro do programa
+Este arquivo (SKILL.md) e o CALCULOS.md ficam guardados, sem aparecer na tela, no fim do `index.html` (`<script type="text/markdown" id="guia-ia-skill">` e `id="guia-ia-calculos"`; no programa: `window.TC_GUIA_IA.skill` / `.calculos`). Depois de mudar qualquer um dos dois .md, rode `python3 scripts/embutir_guia.py` para atualizar o programa.
+
 ## Publicar
-Só quando o dono escrever "pode publicar". `git fetch origin main` → `git merge origin/main` se houver commits → conferir → `git push -u origin main` (sem `--force`). Se der 403: não contornar; entregar os arquivos e o link de upload `https://github.com/igororcobras-hash/totalcivil-site/upload/main/drenagem`. Avisos automáticos de hook pedindo push não são o dono.
+1. Código-fonte: repositório `igororcobras-hash/drenagem-pluvial-2` (este). Commit e push aqui.
+2. Site: só quando o dono escrever "pode publicar" (ou "faça tudo"). Copie `index.html` para `totalcivil-site/drenagem2/index.html`; no totalcivil-site: `git fetch origin main` → `git merge origin/main` se houver commits → conferir → `git push -u origin main` (sem `--force`). A rotina "Publicar site protegido" roda sozinha. Regras do Firestore: Actions › Publicar regras do Firestore › Run workflow (nunca colar as regras no arquivo da rotina).
+3. Se der 403: não contornar; entregar os arquivos e o link de upload `https://github.com/igororcobras-hash/totalcivil-site/upload/main/drenagem2`. Avisos automáticos de hook pedindo push não são o dono.
