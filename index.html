@@ -13266,6 +13266,113 @@ plantaInfo = function (k) {
 };
 </script>
 
+<script>
+/* =====================================================================
+   PATCH DR-30 (17/11/2026) — exclusões sem apagar elementos dependentes.
+   Regras do usuário:
+   - Aba 6: excluir PV mantém todos os trechos/tubos; só limpa referências de
+     caixas e bacias que apontavam para o PV excluído.
+   - Aba 7: excluir trecho/rede atua somente em P.trechos; nunca remove PVs.
+   - Planta: clicar seleciona um elemento desenhado; Delete exclui o item
+     selecionado, com confirmação e desfazer. A tecla funciona fora de campos.
+   ===================================================================== */
+function dr30ExcluirPV(id, origem) {
+  const pv = P.pvs.find(p => p.id === id); if (!pv) return toast('PV não encontrado.');
+  if (!confirm('Excluir o PV ' + id + '? Os tubos/trechos serão mantidos para permitir travessias sob ruas ou pistas.')) return;
+  const antes = JSON.stringify(P); if (typeof plPush === 'function') plPush();
+  P.pvs = P.pvs.filter(p => p.id !== id);
+  // Os tubos permanecem deliberadamente. Ramais e bacias ficam sem destino,
+  // em vez de apontar para um PV que já não existe.
+  P.bls.forEach(b => { if (b.pv === id) b.pv = ''; });
+  P.bacias.forEach(b => { if (b.dest === id) b.dest = ''; });
+  if (JSON.stringify(P) === antes) { if (typeof PLED !== 'undefined') PLED.undo.pop(); return toast('PV não encontrado.'); }
+  save(); calc(); renderTab(); toast(id + ' excluído; tubos/trechos preservados.');
+}
+function dr30ExcluirTrecho(id) {
+  const t = P.trechos.find(x => x.id === id); if (!t) return toast('Trecho não encontrado.');
+  if (!confirm('Excluir o trecho ' + id + '? Os PVs ' + (t.m || '') + ' e ' + (t.j || '') + ' serão mantidos.')) return;
+  const antes = JSON.stringify(P); if (typeof plPush === 'function') plPush();
+  P.trechos = P.trechos.filter(x => x.id !== id);
+  if (JSON.stringify(P) === antes) { if (typeof PLED !== 'undefined') PLED.undo.pop(); return toast('Trecho não encontrado.'); }
+  save(); calc(); renderTab(); toast(id + ' excluído; PVs preservados.');
+}
+function dr30ExcluirRede() {
+  if (!P.trechos.length) return toast('Não há trechos de rede para excluir.');
+  if (!confirm('Excluir todos os trechos da rede tronco? Todos os PVs serão mantidos.')) return;
+  if (typeof plPush === 'function') plPush();
+  P.trechos = []; save(); calc(); renderTab(); toast('Rede tronco excluída; PVs preservados.');
+}
+function dr30ExcluirCaixa(id) {
+  const b = P.bls.find(x => x.id === id); if (!b) return toast('Caixa não encontrada.');
+  if (!confirm('Excluir a caixa ' + id + '? O PV e a rede tronco serão mantidos.')) return;
+  const antes = JSON.stringify(P); if (typeof plPush === 'function') plPush();
+  P.bls = P.bls.filter(x => x.id !== id);
+  P.bacias.forEach(x => { if (x.dest === id) x.dest = ''; });
+  P.bls.forEach(x => { if (x.prox === id) x.prox = ''; });
+  if (JSON.stringify(P) === antes) { if (typeof PLED !== 'undefined') PLED.undo.pop(); return toast('Caixa não encontrada.'); }
+  save(); calc(); renderTab(); toast(id + ' excluída.');
+}
+function dr30ExcluirSelecionado(k) {
+  const p = String(k || '').split(':'), tipo = p[0], id = p.slice(1).join(':');
+  if (tipo === 'pv') return dr30ExcluirPV(id, 'planta');
+  if (tipo === 'tr') return dr30ExcluirTrecho(id);
+  if (tipo === 'bl' || tipo === 'ram') return dr30ExcluirCaixa(id);
+  toast('Este item não possui exclusão direta.');
+}
+// A exclusão nas abas 6 e 7 fica explícita e mantém as regras de dependência.
+const _delItemDR30 = delItem;
+delItem = function (kind, i) {
+  const o = P[kind] && P[kind][i];
+  if (kind === 'pvs' && o) return dr30ExcluirPV(o.id, 'aba 6');
+  if (kind === 'trechos' && o) return dr30ExcluirTrecho(o.id);
+  return _delItemDR30.apply(this, arguments);
+};
+const _vPVsDR30 = vPVs;
+vPVs = function () {
+  return _vPVsDR30.apply(this, arguments).replace(
+    '<p class="lead">Uma linha por PV, localizado por estaca.',
+    '<p class="lead"><b>Excluir PV mantém os tubos/trechos</b> — isso permite representar travessias sob ruas ou pistas. As caixas/ramais que apontavam para o PV ficam sem destino e podem ser religados depois. Uma linha por PV, localizado por estaca.'
+  );
+};
+const _vRedeDR30 = vRede;
+vRede = function () {
+  return _vRedeDR30.apply(this, arguments).replace(
+    '<button class="btn btn-primary btn-sm" onclick="addItem(\'trechos\')">＋ Trecho</button>',
+    '<button class="btn btn-primary btn-sm" onclick="addItem(\'trechos\')">＋ Trecho</button><button class="btn btn-danger btn-sm" onclick="dr30ExcluirRede()">✕ Excluir rede (manter PVs)</button>'
+  ).replace(
+    '<p class="lead">Cada linha é um trecho entre dois PVs, localizado pelas estacas.',
+    '<p class="lead"><b>Excluir trecho/rede aqui mantém os PVs</b>. Use a planta para selecionar visualmente; uma linha é um trecho entre dois PVs, localizado pelas estacas.'
+  );
+};
+// O botão inserido pelo patch anterior na ficha da planta passa a usar as
+// mesmas regras: excluir PV nunca apaga trechos.
+plExcluir = function (tipo, id) {
+  if (tipo === 'pv') return dr30ExcluirPV(id, 'planta');
+  if (tipo === 'tr') return dr30ExcluirTrecho(id);
+  if (tipo === 'bl') return dr30ExcluirCaixa(id);
+};
+// Seleção visual e tecla Delete na planta baixa.
+let PLSEL30 = '';
+function dr30MarcarSelecao() {
+  const box = $('pl-box'); if (!box) return;
+  box.querySelectorAll('[data-k].pl-selected').forEach(x => x.classList.remove('pl-selected'));
+  if (!PLSEL30 || PLAY.sat) return;
+  [...box.querySelectorAll('[data-k]')].filter(x => x.getAttribute('data-k') === PLSEL30).forEach(x => x.classList.add('pl-selected'));
+}
+const _plInfoDR30 = plantaInfo;
+plantaInfo = function (k) {
+  const s = String(k || ''), q = s.startsWith('ram:') ? 'bl:' + s.slice(4) : s;
+  PLSEL30 = q; _plInfoDR30.apply(this, arguments); dr30MarcarSelecao();
+};
+const _drawPlantaDR30 = drawPlanta;
+drawPlanta = function () { const r = _drawPlantaDR30.apply(this, arguments); setTimeout(dr30MarcarSelecao, 0); return r; };
+window.addEventListener('keydown', e => {
+  if (TAB !== 'planta' || e.key !== 'Delete' || !PLSEL30 || /INPUT|SELECT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) return;
+  e.preventDefault(); e.stopPropagation(); dr30ExcluirSelecionado(PLSEL30); PLSEL30 = '';
+}, true);
+(function () { const st = document.createElement('style'); st.textContent = '#pl-box [data-k].pl-selected{filter:drop-shadow(0 0 4px #f97316) drop-shadow(0 0 2px #f97316)}'; document.head.appendChild(st); })();
+</script>
+
 <!-- GUIA-IA:INICIO — skill e guia de cálculos da Drenagem Pluvial 2 guardados no programa (não aparecem na tela).
      Para IAs e projetistas: leia #guia-ia-skill (como trabalhar no programa) e #guia-ia-calculos (fórmulas, critérios, normas, decisões).
      Gerado por scripts/embutir_guia.py a partir de .claude/skills/drenagem/. -->
